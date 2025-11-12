@@ -101,7 +101,10 @@
             }
 
             const response = await fetch(`${API_URL}${endpoint}`, options);
-            return await response.json();
+            const data = await response.json();
+            
+            // If response is not OK, the data will contain success: false
+            return data;
         }
 
         async function uploadRoster(file) {
@@ -737,11 +740,14 @@
                     await fetchAttendees();
                     render();
                 } else {
+                    // Show error in both alert AND on page
+                    alert('❌ Check-in Failed: ' + result.message);
+                    
                     const errorDiv = document.getElementById('checkinError');
                     if (errorDiv) {
                         errorDiv.innerHTML = `
                             <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <p class="text-sm text-red-800">${result.message}</p>
+                                <p class="text-sm text-red-800 font-semibold">${result.message}</p>
                             </div>
                         `;
                     }
@@ -809,7 +815,7 @@
                     attendanceCount.textContent = state.attendees.length;
                 }
             }
-        }, 10000); // Refresh every 30 seconds (less aggressive)
+        }, 10000); // Refresh every 10 seconds (less aggressive)
 
         // Initial render
         render();
