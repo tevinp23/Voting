@@ -1,36 +1,18 @@
 const express = require('express');
 const multer = require('multer');
 const csv = require('csv-parser');
-const fs = require('fs');
-const path = require('path');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Configure multer for CSV uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, 'roster.csv');
-  }
-});
-
-const upload = multer({ storage: storage });
-
-// Create uploads directory if it doesn't exist
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
-
-// In-memory data storage (in production, use a real database)
+// In-memory data storage (Vercel serverless - this will reset on each cold start)
+// For production, you'd want to use a database like MongoDB or PostgreSQL
 let eventData = {
   eventName: '',
   eventLocation: { lat: null, lng: null },
@@ -38,7 +20,7 @@ let eventData = {
   accessCode: '',
   isEventActive: false,
   attendees: [],
-  deviceFingerprints: new Set(),
+  deviceFingerprints: [],
   pollQuestion: '',
   pollOptions: [],
   isPollActive: false,
@@ -46,21 +28,23 @@ let eventData = {
   approvedMembers: []
 };
 
-// Load roster from CSV
-function loadRoster() {
-  const rosterPath = path.join(__dirname, 'uploads', 'roster.csv');
-  
-  if (!fs.existsSync(rosterPath)) {
-    return [];
-  }
+// Configure multer for memory storage (since Vercel doesn't have persistent file system)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-  const members = [];
-  
+const ADMIN_PASSWORD = 'FratAdmin2024';
+
+// Parse CSV from buffer
+function parseCSVFromBuffer(buffer) {
   return new Promise((resolve, reject) => {
-    fs.createReadStream(rosterPath)
+    const members = [];
+    const { Readable } = require('stream');
+    
+    const stream = Readable.from(buffer.toString());
+    
+    stream
       .pipe(csv())
       .on('data', (row) => {
-        // Support different CSV formats
         const name = row.name || row.Name || row.NAME || 
                      row.fullname || row['Full Name'] || row['full name'];
         const email = row.email || row.Email || row.EMAIL || '';
@@ -88,7 +72,11 @@ function loadRoster() {
 // Upload CSV roster
 app.post('/api/upload-roster', upload.single('roster'), async (req, res) => {
   try {
-    const members = await loadRoster();
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    
+    const members = await parseCSVFromBuffer(req.file.buffer);
     eventData.approvedMembers = members;
     res.json({ 
       success: true, 
@@ -115,7 +103,7 @@ app.post('/api/admin/start-event', (req, res) => {
   eventData.accessCode = accessCode;
   eventData.isEventActive = true;
   eventData.attendees = [];
-  eventData.deviceFingerprints = new Set();
+  eventData.deviceFingerprints = [];
   
   res.json({ success: true, message: 'Event started' });
 });
@@ -206,7 +194,7 @@ app.post('/api/checkin', (req, res) => {
   }
   
   // Check device fingerprint
-  if (eventData.deviceFingerprints.has(fingerprint)) {
+  if (eventData.deviceFingerprints.includes(fingerprint)) {
     return res.status(400).json({ 
       success: false, 
       message: 'This device has already checked in' 
@@ -238,7 +226,7 @@ app.post('/api/checkin', (req, res) => {
   };
   
   eventData.attendees.push(attendee);
-  eventData.deviceFingerprints.add(fingerprint);
+  eventData.deviceFingerprints.push(fingerprint);
   
   res.json({ 
     success: true, 
@@ -304,7 +292,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server - Railway sets PORT automatically
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
