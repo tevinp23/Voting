@@ -795,19 +795,21 @@
             // Event listeners are attached via onclick in HTML
         }
 
-        // Auto-refresh for admin panel
+        // Auto-refresh for admin panel - ONLY when event is active
         setInterval(() => {
-            if (state.mode === 'admin' && state.isAuthenticated && state.eventData) {
-                fetchAttendees().then(() => {
-                    fetchVoteResults().then(() => {
-                        // Only update if still on admin panel
-                        if (state.mode === 'admin') {
-                            render();
-                        }
-                    });
-                });
+            // Only refresh if event is actually running (not during setup)
+            if (state.mode === 'admin' && state.isAuthenticated && state.eventData && state.eventData.isEventActive) {
+                // Only fetch data, don't re-render the entire page to avoid deleting user input
+                fetchAttendees();
+                fetchVoteResults();
+                
+                // Update only the attendance and vote count without full re-render
+                const attendanceCount = document.querySelector('[data-attendance-count]');
+                if (attendanceCount) {
+                    attendanceCount.textContent = state.attendees.length;
+                }
             }
-        }, 5000); // Refresh every 5 seconds
+        }, 10000); // Refresh every 30 seconds (less aggressive)
 
         // Initial render
         render();
