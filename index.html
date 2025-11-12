@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraternity Attendance Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // API Base URL - will be your Replit URL
+        const API_URL = window.location.origin;
+
+        // SVG Icons
+        const icons = {
+            checkCircle: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            xCircle: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+            mapPin: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
+            users: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+            vote: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`,
+            clock: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+            alertCircle: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+            upload: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
+            download: (size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`
+        };
+
+        // State
+        let state = {
+            mode: 'select',
+            isAuthenticated: false,
+            memberName: '',
+            memberCode: '',
+            adminPassword: '',
+            eventData: null,
+            attendees: [],
+            voteResults: {},
+            approvedMembers: []
+        };
+
+        const ADMIN_PASSWORD = 'FratAdmin2024';
+
+        // Utility Functions
+        function getDeviceFingerprint() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillText('fingerprint', 2, 2);
+            return canvas.toDataURL();
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        function getUserLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation not supported'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        });
+                    },
+                    (error) => reject(error),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            });
+        }
+
+        // API Calls
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            const response = await fetch(`${API_URL}${endpoint}`, options);
+            return await response.json();
+        }
+
+        async function uploadRoster(file) {
+            const formData = new FormData();
+            formData.append('roster', file);
+
+            const response = await fetch(`${API_URL}/api/upload-roster`, {
+                method: 'POST',
+                body: formData
+            });
+
+            return await response.json();
+        }
+
+        async function fetchEventStatus() {
+            state.eventData = await apiCall('/api/event-status');
+        }
+
+        async function fetchAttendees() {
+            const data = await apiCall('/api/attendees');
+            state.attendees = data.attendees;
+        }
+
+        async function fetchVoteResults() {
+            const data = await apiCall('/api/votes');
+            state.voteResults = data.results;
+            return data;
+        }
+
+        async function fetchApprovedMembers() {
+            const data = await apiCall('/api/members');
+            state.approvedMembers = data.members;
+        }
+
+        // Render Functions
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.mode === 'select') {
+                app.innerHTML = renderModeSelect();
+            } else if (state.mode === 'admin' && !state.isAuthenticated) {
+                app.innerHTML = renderAdminLogin();
+            } else if (state.mode === 'admin' && state.isAuthenticated) {
+                app.innerHTML = renderAdminPanel();
+            } else if (state.mode === 'member' && !state.isAuthenticated) {
+                app.innerHTML = renderMemberLogin();
+            } else if (state.mode === 'member' && state.isAuthenticated) {
+                app.innerHTML = renderMemberPanel();
+            }
+
+            attachEventListeners();
+        }
+
+        function renderModeSelect() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                        <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Fraternity Platform</h1>
+                        <p class="text-center text-gray-600 mb-8">Attendance & Voting System</p>
+                        
+                        <div class="space-y-4">
+                            <button onclick="goToMode('admin')" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition flex items-center justify-center gap-2">
+                                ${icons.users()}
+                                Admin Panel
+                            </button>
+                            
+                            <button onclick="goToMode('member')" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition flex items-center justify-center gap-2">
+                                ${icons.checkCircle()}
+                                Member Check-In
+                            </button>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-gray-200">
+                            <p class="text-xs text-gray-500 text-center">
+                                Location verification enabled • Anti-cheat protection active
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminLogin() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                        <button onclick="goToMode('select')" class="text-gray-600 mb-4 hover:text-gray-800">
+                            ← Back
+                        </button>
+                        
+                        <h2 class="text-2xl font-bold mb-6 text-gray-800">Admin Login</h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                <input type="password" id="adminPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter admin password">
+                            </div>
+                            
+                            <button onclick="adminLogin()" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                                Login
+                            </button>
+
+                            <p class="text-xs text-gray-500 text-center mt-4">
+                                Default password: FratAdmin2024
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminPanel() {
+            if (!state.eventData) {
+                fetchEventStatus().then(() => {
+                    fetchAttendees().then(render);
+                    fetchVoteResults().then(render);
+                    fetchApprovedMembers().then(render);
+                });
+                return '<div class="min-h-screen flex items-center justify-center">Loading...</div>';
+            }
+
+            const totalVotes = Object.values(state.voteResults).reduce((a, b) => a + b, 0);
+
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-4">
+                            <div class="flex justify-between items-center">
+                                <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
+                                <button onclick="logout()" class="text-gray-600 hover:text-gray-800">
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <!-- Roster Upload -->
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <h2 class="text-xl font-bold mb-4 text-gray-800">Member Roster</h2>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload CSV</label>
+                                        <input type="file" id="rosterFile" accept=".csv" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <p class="text-xs text-gray-500 mt-1">CSV should have a "name" column</p>
+                                    </div>
+                                    
+                                    <button onclick="handleUploadRoster()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2">
+                                        ${icons.upload(16)}
+                                        Upload Roster
+                                    </button>
+
+                                    ${state.approvedMembers.length > 0 ? `
+                                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <p class="text-green-800 font-semibold">${state.approvedMembers.length} members loaded</p>
+                                            <div class="mt-2 max-h-32 overflow-y-auto text-xs text-green-700">
+                                                ${state.approvedMembers.map(m => `<div>• ${m.name}</div>`).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Event Setup -->
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <h2 class="text-xl font-bold mb-4 text-gray-800">Event Setup</h2>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Event Name</label>
+                                        <input type="text" id="eventName" value="${state.eventData.eventName || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Weekly Meeting" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Event Location</label>
+                                        <button onclick="setLocation()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                            ${icons.mapPin(16)}
+                                            Set to Current Location
+                                        </button>
+                                        <div id="locationDisplay"></div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Check-in Radius (meters)</label>
+                                        <input type="number" id="radius" value="${state.eventData.radius || 50}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Access Code</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="accessCode" value="${state.eventData.accessCode || ''}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                            <button onclick="generateCode()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                                Generate
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    ${!state.eventData.isEventActive ? `
+                                        <button onclick="startEvent()" class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2">
+                                            ${icons.checkCircle()}
+                                            Start Event
+                                        </button>
+                                    ` : `
+                                        <button onclick="endEvent()" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 flex items-center justify-center gap-2">
+                                            ${icons.xCircle()}
+                                            End Event
+                                        </button>
+                                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <p class="text-green-800 font-semibold flex items-center gap-2">
+                                                ${icons.clock(16)}
+                                                Event Active
+                                            </p>
+                                            <p class="text-sm text-green-700 mt-1">
+                                                Share code: <span class="font-bold">${state.eventData.accessCode}</span>
+                                            </p>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+
+                            <!-- Attendance List -->
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h2 class="text-xl font-bold text-gray-800">
+                                        Attendance (${state.attendees.length})
+                                    </h2>
+                                    ${state.attendees.length > 0 ? `
+                                        <a href="${API_URL}/api/download-attendance" class="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm">
+                                            ${icons.download(16)}
+                                            Download
+                                        </a>
+                                    ` : ''}
+                                </div>
+                                
+                                <div class="space-y-2 max-h-96 overflow-y-auto">
+                                    ${state.attendees.length === 0 ? `
+                                        <p class="text-gray-500 text-center py-8">No check-ins yet</p>
+                                    ` : state.attendees.map(attendee => `
+                                        <div class="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                                            <div>
+                                                <p class="font-semibold text-gray-800">${attendee.name}</p>
+                                                <p class="text-xs text-gray-600">${attendee.checkInTime}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xs text-gray-600">${attendee.distance}m away</p>
+                                                ${icons.checkCircle(16)}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Poll Setup -->
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <h2 class="text-xl font-bold mb-4 text-gray-800">Voting Poll</h2>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Poll Question</label>
+                                        <input type="text" id="pollQuestion" value="${state.eventData.pollQuestion || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="What should we order?" ${state.eventData.isPollActive ? 'disabled' : ''}>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Options (one per line)</label>
+                                        <textarea id="pollOptions" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Pizza&#10;Burgers&#10;Tacos" ${state.eventData.isPollActive ? 'disabled' : ''}>${(state.eventData.pollOptions || []).join('\n')}</textarea>
+                                    </div>
+
+                                    ${!state.eventData.isPollActive ? `
+                                        <button onclick="startPoll()" class="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2" ${!state.eventData.isEventActive ? 'disabled' : ''}>
+                                            ${icons.vote()}
+                                            Start Poll
+                                        </button>
+                                    ` : `
+                                        <button onclick="endPoll()" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600">
+                                            End Poll
+                                        </button>
+                                    `}
+
+                                    ${!state.eventData.isEventActive ? `
+                                        <p class="text-xs text-gray-500 text-center">Event must be active</p>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Poll Results -->
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                                    Poll Results (${totalVotes} votes)
+                                </h2>
+                                
+                                ${state.eventData.isPollActive ? `
+                                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                                        <p class="text-purple-800 font-semibold">${state.eventData.pollQuestion}</p>
+                                    </div>
+                                ` : ''}
+
+                                <div class="space-y-3">
+                                    ${(state.eventData.pollOptions || []).map(option => {
+                                        const count = state.voteResults[option] || 0;
+                                        const percentage = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) : 0;
+                                        
+                                        return `
+                                            <div class="space-y-1">
+                                                <div class="flex justify-between text-sm">
+                                                    <span class="font-medium text-gray-700">${option}</span>
+                                                    <span class="text-gray-600">${count} (${percentage}%)</span>
+                                                </div>
+                                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                                    <div class="bg-purple-500 h-2 rounded-full transition-all" style="width: ${percentage}%"></div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    
+                                    ${totalVotes === 0 && (state.eventData.pollOptions || []).length === 0 ? `
+                                        <p class="text-gray-500 text-center py-8">No poll active</p>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMemberLogin() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                        <button onclick="goToMode('select')" class="text-gray-600 mb-4 hover:text-gray-800">
+                            ← Back
+                        </button>
+                        
+                        <h2 class="text-2xl font-bold mb-6 text-gray-800">Member Check-In</h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Access Code</label>
+                                <input type="text" id="memberCode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter event code">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+                                <input type="text" id="memberName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="John Doe">
+                            </div>
+                            
+                            <button onclick="memberLogin()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                                Continue
+                            </button>
+
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p class="text-xs text-blue-800 flex items-center gap-2">
+                                    ${icons.alertCircle(14)}
+                                    Location services must be enabled
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMemberPanel() {
+            if (!state.eventData) {
+                fetchEventStatus().then(render);
+                return '<div class="min-h-screen flex items-center justify-center">Loading...</div>';
+            }
+
+            const fingerprint = getDeviceFingerprint();
+            const hasCheckedIn = state.attendees.some(a => a.fingerprint === fingerprint);
+            const hasVoted = state.eventData.isPollActive && hasCheckedIn; // Simplified check
+
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h1 class="text-2xl font-bold text-gray-800">Welcome, ${state.memberName}!</h1>
+                                <button onclick="logout()" class="text-gray-600 hover:text-gray-800">
+                                    Exit
+                                </button>
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+                                <p class="text-lg font-semibold text-gray-800">${state.eventData.eventName || 'Event'}</p>
+                                <p class="text-sm text-gray-600 mt-1">Check-in radius: ${state.eventData.radius}m</p>
+                            </div>
+                        </div>
+
+                        <!-- Check-in Card -->
+                        <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                            <h2 class="text-xl font-bold mb-4 text-gray-800">Attendance Check-In</h2>
+                            
+                            <div id="checkinStatus">
+                                ${!hasCheckedIn ? `
+                                    <div class="space-y-4">
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                            <p class="text-sm text-yellow-800 flex items-center gap-2">
+                                                ${icons.mapPin(16)}
+                                                Make sure you are physically present at the event
+                                            </p>
+                                        </div>
+
+                                        <button onclick="handleCheckIn()" class="w-full bg-green-500 text-white py-4 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2">
+                                            ${icons.checkCircle()}
+                                            Check In Now
+                                        </button>
+
+                                        <div id="checkinError"></div>
+                                    </div>
+                                ` : `
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <p class="text-green-800 font-semibold flex items-center gap-2">
+                                            ${icons.checkCircle()}
+                                            You're checked in!
+                                        </p>
+                                        <p class="text-sm text-green-700 mt-1">Attendance recorded successfully</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+
+                        <!-- Voting Card -->
+                        ${state.eventData.isPollActive ? `
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <h2 class="text-xl font-bold mb-4 text-gray-800">Active Poll</h2>
+                                
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                                    <p class="font-semibold text-purple-900">${state.eventData.pollQuestion}</p>
+                                </div>
+
+                                ${hasCheckedIn ? `
+                                    <div id="voteOptions" class="space-y-2">
+                                        ${state.eventData.pollOptions.map(option => `
+                                            <button onclick="handleVote('${option}')" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-900 py-3 rounded-lg font-medium transition">
+                                                ${option}
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    <div id="voteStatus" class="mt-4"></div>
+                                ` : `
+                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <p class="text-gray-600 text-center">You must check in before voting</p>
+                                    </div>
+                                `}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Event Handlers
+        function goToMode(mode) {
+            state.mode = mode;
+            render();
+        }
+
+        function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                state.isAuthenticated = true;
+                render();
+            } else {
+                alert('Incorrect password');
+            }
+        }
+
+        async function memberLogin() {
+            const code = document.getElementById('memberCode').value.toUpperCase();
+            const name = document.getElementById('memberName').value;
+
+            await fetchEventStatus();
+
+            if (!state.eventData.isEventActive) {
+                alert('No active event. Please contact the admin.');
+                return;
+            }
+
+            if (code !== state.eventData.accessCode) {
+                alert('Incorrect access code');
+                return;
+            }
+
+            if (!name.trim()) {
+                alert('Please enter your name');
+                return;
+            }
+
+            state.memberName = name;
+            state.isAuthenticated = true;
+            await fetchAttendees();
+            render();
+        }
+
+        function logout() {
+            state.isAuthenticated = false;
+            state.mode = 'select';
+            state.memberName = '';
+            render();
+        }
+
+        async function handleUploadRoster() {
+            const fileInput = document.getElementById('rosterFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            try {
+                const result = await uploadRoster(file);
+                if (result.success) {
+                    alert(`Success! Loaded ${result.members.length} members`);
+                    await fetchApprovedMembers();
+                    render();
+                } else {
+                    alert('Error uploading roster: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error uploading roster: ' + error.message);
+            }
+        }
+
+        async function setLocation() {
+            try {
+                const location = await getUserLocation();
+                state.eventData.eventLocation = location;
+                const display = document.getElementById('locationDisplay');
+                if (display) {
+                    display.innerHTML = `<p class="text-xs text-gray-600 mt-2">Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}</p>`;
+                }
+                alert(`Location set to:\nLat: ${location.lat.toFixed(6)}\nLng: ${location.lng.toFixed(6)}`);
+            } catch (error) {
+                alert('Error getting location: ' + error.message);
+            }
+        }
+
+        function generateCode() {
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            document.getElementById('accessCode').value = code;
+        }
+
+        async function startEvent() {
+            const eventName = document.getElementById('eventName').value;
+            const radius = parseInt(document.getElementById('radius').value);
+            const accessCode = document.getElementById('accessCode').value;
+
+            if (!eventName || !state.eventData.eventLocation.lat || !accessCode) {
+                alert('Please set event name, location, and access code first');
+                return;
+            }
+
+            const result = await apiCall('/api/admin/start-event', 'POST', {
+                eventName,
+                eventLocation: state.eventData.eventLocation,
+                radius,
+                accessCode
+            });
+
+            if (result.success) {
+                alert('Event started!');
+                await fetchEventStatus();
+                render();
+            }
+        }
+
+        async function endEvent() {
+            const result = await apiCall('/api/admin/end-event', 'POST');
+            if (result.success) {
+                alert('Event ended');
+                await fetchEventStatus();
+                render();
+            }
+        }
+
+        async function startPoll() {
+            const question = document.getElementById('pollQuestion').value;
+            const options = document.getElementById('pollOptions').value
+                .split('\n')
+                .map(opt => opt.trim())
+                .filter(opt => opt);
+
+            if (!question || options.length < 2) {
+                alert('Please enter a question and at least 2 options');
+                return;
+            }
+
+            const result = await apiCall('/api/admin/start-poll', 'POST', {
+                pollQuestion: question,
+                pollOptions: options
+            });
+
+            if (result.success) {
+                alert('Poll started!');
+                await fetchEventStatus();
+                render();
+            }
+        }
+
+        async function endPoll() {
+            const result = await apiCall('/api/admin/end-poll', 'POST');
+            if (result.success) {
+                alert('Poll ended');
+                await fetchEventStatus();
+                await fetchVoteResults();
+                render();
+            }
+        }
+
+        async function handleCheckIn() {
+            try {
+                const location = await getUserLocation();
+                const distance = calculateDistance(
+                    location.lat,
+                    location.lng,
+                    state.eventData.eventLocation.lat,
+                    state.eventData.eventLocation.lng
+                );
+
+                const fingerprint = getDeviceFingerprint();
+
+                const result = await apiCall('/api/checkin', 'POST', {
+                    name: state.memberName,
+                    fingerprint: fingerprint,
+                    location: location,
+                    distance: distance
+                });
+
+                if (result.success) {
+                    alert(`✓ Check-in successful! You are ${Math.round(distance)}m from the event.`);
+                    await fetchAttendees();
+                    render();
+                } else {
+                    const errorDiv = document.getElementById('checkinError');
+                    if (errorDiv) {
+                        errorDiv.innerHTML = `
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <p class="text-sm text-red-800">${result.message}</p>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                alert('Error: ' + error.message + '. Please enable location services.');
+            }
+        }
+
+        async function handleVote(option) {
+            try {
+                const location = await getUserLocation();
+                const distance = calculateDistance(
+                    location.lat,
+                    location.lng,
+                    state.eventData.eventLocation.lat,
+                    state.eventData.eventLocation.lng
+                );
+
+                const fingerprint = getDeviceFingerprint();
+
+                const result = await apiCall('/api/vote', 'POST', {
+                    fingerprint: fingerprint,
+                    option: option,
+                    distance: distance
+                });
+
+                if (result.success) {
+                    const statusDiv = document.getElementById('voteStatus');
+                    if (statusDiv) {
+                        statusDiv.innerHTML = `
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <p class="text-purple-800 font-semibold flex items-center gap-2">
+                                    ${icons.vote()}
+                                    Your vote has been recorded!
+                                </p>
+                                <p class="text-sm text-purple-700 mt-1">You voted for: <span class="font-semibold">${option}</span></p>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('voteOptions').style.display = 'none';
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function attachEventListeners() {
+            // Event listeners are attached via onclick in HTML
+        }
+
+        // Auto-refresh for admin panel
+        setInterval(() => {
+            if (state.mode === 'admin' && state.isAuthenticated && state.eventData) {
+                fetchAttendees().then(() => {
+                    fetchVoteResults().then(() => {
+                        // Only update if still on admin panel
+                        if (state.mode === 'admin') {
+                            render();
+                        }
+                    });
+                });
+            }
+        }, 5000); // Refresh every 5 seconds
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
