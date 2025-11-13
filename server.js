@@ -154,12 +154,13 @@ app.get('/api/members', (req, res) => {
 
 // Admin: Start event
 app.post('/api/admin/start-event', (req, res) => {
-  const { eventName, eventLocation, radius, accessCode } = req.body;
+  const { eventName, eventLocation, radius, accessCode, requireLocation } = req.body;
   
   eventData.eventName = eventName;
   eventData.eventLocation = eventLocation;
   eventData.radius = radius;
   eventData.accessCode = accessCode;
+  eventData.requireLocation = requireLocation !== false; // Default to true if not specified
   eventData.isEventActive = true;
   eventData.attendees = [];
   eventData.deviceFingerprints = [];
@@ -202,7 +203,8 @@ app.get('/api/event-status', (req, res) => {
     attendeeCount: eventData.attendees.length,
     pollQuestion: eventData.pollQuestion,
     pollOptions: eventData.pollOptions,
-    isPollActive: eventData.isPollActive
+    isPollActive: eventData.isPollActive,
+    requireLocation: eventData.requireLocation !== false
   });
 });
 
@@ -285,8 +287,8 @@ app.post('/api/checkin', (req, res) => {
     });
   }
   
-  // Check distance
-  if (distance > eventData.radius) {
+  // Check distance (only if location verification is required)
+  if (eventData.requireLocation !== false && distance > eventData.radius) {
     return res.status(400).json({ 
       success: false, 
       message: `You are ${Math.round(distance)}m away. Must be within ${eventData.radius}m` 
