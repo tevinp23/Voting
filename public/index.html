@@ -167,18 +167,18 @@
 
         function renderModeSelect() {
             return `
-                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-                        <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Fraternity Platform</h1>
+                <div class="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-4 border-yellow-500">
+                        <h1 class="text-3xl font-bold text-center mb-2 text-blue-800">Pi Kappa Phi</h1>
                         <p class="text-center text-gray-600 mb-8">Attendance & Voting System</p>
                         
                         <div class="space-y-4">
-                            <button onclick="goToMode('admin')" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition flex items-center justify-center gap-2">
+                            <button onclick="goToMode('admin')" class="w-full bg-gradient-to-r from-blue-700 to-blue-800 text-white py-4 rounded-xl font-semibold hover:from-blue-800 hover:to-blue-900 transition flex items-center justify-center gap-2 shadow-lg">
                                 ${icons.users()}
                                 Admin Panel
                             </button>
                             
-                            <button onclick="goToMode('member')" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition flex items-center justify-center gap-2">
+                            <button onclick="goToMode('member')" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-blue-900 py-4 rounded-xl font-semibold hover:from-yellow-600 hover:to-yellow-700 transition flex items-center justify-center gap-2 shadow-lg">
                                 ${icons.checkCircle()}
                                 Member Check-In
                             </button>
@@ -196,21 +196,21 @@
 
         function renderAdminLogin() {
             return `
-                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                <div class="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-4 border-yellow-500">
                         <button onclick="goToMode('select')" class="text-gray-600 mb-4 hover:text-gray-800">
                             ← Back
                         </button>
                         
-                        <h2 class="text-2xl font-bold mb-6 text-gray-800">Admin Login</h2>
+                        <h2 class="text-2xl font-bold mb-6 text-blue-800">Admin Login</h2>
                         
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                                <input type="password" id="adminPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter admin password">
+                                <input type="password" id="adminPassword" class="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" placeholder="Enter admin password">
                             </div>
                             
-                            <button onclick="adminLogin()" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                            <button onclick="adminLogin()" class="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition shadow-lg">
                                 Login
                             </button>
 
@@ -236,11 +236,11 @@
             const totalVotes = Object.values(state.voteResults).reduce((a, b) => a + b, 0);
 
             return `
-                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+                <div class="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 p-4">
                     <div class="max-w-6xl mx-auto">
-                        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-4">
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-4 border-4 border-yellow-500">
                             <div class="flex justify-between items-center">
-                                <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
+                                <h1 class="text-2xl font-bold text-blue-800">Admin Panel</h1>
                                 <button onclick="logout()" class="text-gray-600 hover:text-gray-800">
                                     Logout
                                 </button>
@@ -249,8 +249,8 @@
 
                         <div class="grid md:grid-cols-2 gap-4">
                             <!-- Roster Upload -->
-                            <div class="bg-white rounded-xl shadow-lg p-6">
-                                <h2 class="text-xl font-bold mb-4 text-gray-800">Member Roster</h2>
+                            <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+                                <h2 class="text-xl font-bold mb-4 text-blue-800">Member Roster</h2>
                                 
                                 <div class="space-y-4">
                                     <div>
@@ -259,7 +259,7 @@
                                         <p class="text-xs text-gray-500 mt-1">CSV file with First, Last, and Cell Phone columns</p>
                                     </div>
                                     
-                                    <button onclick="handleUploadRoster()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2">
+                                    <button onclick="handleUploadRoster()" class="w-full bg-yellow-500 text-blue-900 py-2 rounded-lg hover:bg-yellow-600 flex items-center justify-center gap-2 font-semibold shadow-lg">
                                         ${icons.upload(16)}
                                         Upload Roster
                                     </button>
@@ -283,13 +283,13 @@
                             </div>
 
                             <!-- Event Setup -->
-                            <div class="bg-white rounded-xl shadow-lg p-6">
-                                <h2 class="text-xl font-bold mb-4 text-gray-800">Event Setup</h2>
+                            <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+                                <h2 class="text-xl font-bold mb-4 text-blue-800">Event Setup</h2>
                                 
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Event Name</label>
-                                        <input type="text" id="eventName" value="${state.eventData.eventName || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Weekly Meeting" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                        <input type="text" id="eventName" value="${state.eventData.eventName || ''}" class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" placeholder="Weekly Meeting" ${state.eventData.isEventActive ? 'disabled' : ''}>
                                     </div>
 
                                     <div>
@@ -302,7 +302,7 @@
 
                                     <div id="locationSection">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Event Location</label>
-                                        <button onclick="setLocation()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                        <button onclick="setLocation()" class="w-full bg-blue-700 text-white py-2 rounded-lg hover:bg-blue-800 flex items-center justify-center gap-2 font-semibold shadow-lg" ${state.eventData.isEventActive ? 'disabled' : ''}>
                                             ${icons.mapPin(16)}
                                             Set to Current Location
                                         </button>
@@ -311,21 +311,21 @@
 
                                     <div id="radiusSection">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Check-in Radius (meters)</label>
-                                        <input type="number" id="radius" value="${state.eventData.radius || 50}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                        <input type="number" id="radius" value="${state.eventData.radius || 50}" class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" ${state.eventData.isEventActive ? 'disabled' : ''}>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Access Code</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="accessCode" value="${state.eventData.accessCode || ''}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg" ${state.eventData.isEventActive ? 'disabled' : ''}>
-                                            <button onclick="generateCode()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                            <input type="text" id="accessCode" value="${state.eventData.accessCode || ''}" class="flex-1 px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" ${state.eventData.isEventActive ? 'disabled' : ''}>
+                                            <button onclick="generateCode()" class="bg-yellow-500 text-blue-900 px-4 py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-lg" ${state.eventData.isEventActive ? 'disabled' : ''}>
                                                 Generate
                                             </button>
                                         </div>
                                     </div>
 
                                     ${!state.eventData.isEventActive ? `
-                                        <button onclick="startEvent()" class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2">
+                                        <button onclick="startEvent()" class="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 flex items-center justify-center gap-2 shadow-lg">
                                             ${icons.checkCircle()}
                                             Start Event
                                         </button>
@@ -334,13 +334,13 @@
                                             ${icons.xCircle()}
                                             End Event
                                         </button>
-                                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                            <p class="text-green-800 font-semibold flex items-center gap-2">
+                                        <div class="bg-blue-50 border-2 border-blue-700 rounded-lg p-3">
+                                            <p class="text-blue-800 font-semibold flex items-center gap-2">
                                                 ${icons.clock(16)}
                                                 Event Active
                                             </p>
-                                            <p class="text-sm text-green-700 mt-1">
-                                                Share code: <span class="font-bold">${state.eventData.accessCode}</span>
+                                            <p class="text-sm text-blue-700 mt-1">
+                                                Share code: <span class="font-bold text-yellow-600">${state.eventData.accessCode}</span>
                                             </p>
                                         </div>
                                     `}
@@ -348,9 +348,9 @@
                             </div>
 
                             <!-- Attendance List -->
-                            <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
                                 <div class="flex justify-between items-center mb-4">
-                                    <h2 class="text-xl font-bold text-gray-800">
+                                    <h2 class="text-xl font-bold text-blue-800">
                                         Attendance (${state.attendees.length})
                                     </h2>
                                     <div class="flex gap-2">
@@ -361,7 +361,7 @@
                                             Refresh
                                         </button>
                                         ${state.attendees.length > 0 ? `
-                                            <a href="${API_URL}/api/download-attendance" class="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm">
+                                            <a href="${API_URL}/api/download-attendance" class="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-semibold">
                                                 ${icons.download(16)}
                                                 Download
                                             </a>
@@ -389,22 +389,22 @@
                             </div>
 
                             <!-- Poll Setup -->
-                            <div class="bg-white rounded-xl shadow-lg p-6">
-                                <h2 class="text-xl font-bold mb-4 text-gray-800">Voting Poll</h2>
+                            <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+                                <h2 class="text-xl font-bold mb-4 text-blue-800">Voting Poll</h2>
                                 
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Poll Question</label>
-                                        <input type="text" id="pollQuestion" value="${state.eventData.pollQuestion || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="What should we order?" ${state.eventData.isPollActive ? 'disabled' : ''}>
+                                        <input type="text" id="pollQuestion" value="${state.eventData.pollQuestion || ''}" class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" placeholder="What should we order?" ${state.eventData.isPollActive ? 'disabled' : ''}>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Options (one per line)</label>
-                                        <textarea id="pollOptions" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Pizza&#10;Burgers&#10;Tacos" ${state.eventData.isPollActive ? 'disabled' : ''}>${(state.eventData.pollOptions || []).join('\n')}</textarea>
+                                        <textarea id="pollOptions" rows="4" class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" placeholder="Pizza&#10;Burgers&#10;Tacos" ${state.eventData.isPollActive ? 'disabled' : ''}>${(state.eventData.pollOptions || []).join('\n')}</textarea>
                                     </div>
 
                                     ${!state.eventData.isPollActive ? `
-                                        <button onclick="startPoll()" class="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 flex items-center justify-center gap-2" ${!state.eventData.isEventActive ? 'disabled' : ''}>
+                                        <button onclick="startPoll()" class="w-full bg-yellow-500 text-blue-900 py-3 rounded-lg font-semibold hover:bg-yellow-600 flex items-center justify-center gap-2 shadow-lg" ${!state.eventData.isEventActive ? 'disabled' : ''}>
                                             ${icons.vote()}
                                             Start Poll
                                         </button>
@@ -421,14 +421,14 @@
                             </div>
 
                             <!-- Poll Results -->
-                            <div class="bg-white rounded-xl shadow-lg p-6">
-                                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                            <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+                                <h2 class="text-xl font-bold mb-4 text-blue-800">
                                     Poll Results (${totalVotes} votes)
                                 </h2>
                                 
                                 ${state.eventData.isPollActive ? `
-                                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
-                                        <p class="text-purple-800 font-semibold">${state.eventData.pollQuestion}</p>
+                                    <div class="bg-blue-50 border-2 border-blue-700 rounded-lg p-3 mb-4">
+                                        <p class="text-blue-800 font-semibold">${state.eventData.pollQuestion}</p>
                                     </div>
                                 ` : ''}
 
@@ -444,7 +444,7 @@
                                                     <span class="text-gray-600">${count} (${percentage}%)</span>
                                                 </div>
                                                 <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="bg-purple-500 h-2 rounded-full transition-all" style="width: ${percentage}%"></div>
+                                                    <div class="bg-yellow-500 h-2 rounded-full transition-all" style="width: ${percentage}%"></div>
                                                 </div>
                                             </div>
                                         `;
@@ -463,27 +463,27 @@
 
         function renderMemberLogin() {
             return `
-                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                <div class="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-4 border-yellow-500">
                         <button onclick="goToMode('select')" class="text-gray-600 mb-4 hover:text-gray-800">
                             ← Back
                         </button>
                         
-                        <h2 class="text-2xl font-bold mb-6 text-gray-800">Member Check-In</h2>
+                        <h2 class="text-2xl font-bold mb-6 text-blue-800">Member Check-In</h2>
                         
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Access Code</label>
-                                <input type="text" id="memberCode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter event code">
+                                <input type="text" id="memberCode" class="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" placeholder="Enter event code">
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Your Phone Number</label>
-                                <input type="tel" id="memberPhone" maxlength="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="9999999999 (10 digits)">
+                                <input type="tel" id="memberPhone" maxlength="10" class="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-700 focus:border-transparent" placeholder="9999999999 (10 digits)">
                                 <p class="text-xs text-gray-500 mt-1">Enter 10 digits only, no spaces or dashes</p>
                             </div>
                             
-                            <button onclick="memberLogin()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                            <button onclick="memberLogin()" class="w-full bg-yellow-500 text-blue-900 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition shadow-lg">
                                 Continue
                             </button>
 
@@ -510,25 +510,25 @@
             const hasVoted = state.eventData.isPollActive && hasCheckedIn; // Simplified check
 
             return `
-                <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+                <div class="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 p-4">
                     <div class="max-w-2xl mx-auto">
-                        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-4">
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-4 border-4 border-yellow-500">
                             <div class="flex justify-between items-center mb-4">
-                                <h1 class="text-2xl font-bold text-gray-800">Welcome${state.memberName ? ', ' + state.memberName : ''}!</h1>
+                                <h1 class="text-2xl font-bold text-blue-800">Welcome${state.memberName ? ', ' + state.memberName : ''}!</h1>
                                 <button onclick="logout()" class="text-gray-600 hover:text-gray-800">
                                     Exit
                                 </button>
                             </div>
                             
-                            <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-                                <p class="text-lg font-semibold text-gray-800">${state.eventData.eventName || 'Event'}</p>
-                                <p class="text-sm text-gray-600 mt-1">Check-in radius: ${state.eventData.radius}m</p>
+                            <div class="bg-gradient-to-r from-blue-100 to-yellow-50 rounded-lg p-4 border-2 border-blue-300">
+                                <p class="text-lg font-semibold text-blue-800">${state.eventData.eventName || 'Event'}</p>
+                                <p class="text-sm text-gray-700 mt-1">Check-in radius: ${state.eventData.radius}m</p>
                             </div>
                         </div>
 
                         <!-- Check-in Card -->
-                        <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
-                            <h2 class="text-xl font-bold mb-4 text-gray-800">Attendance Check-In</h2>
+                        <div class="bg-white rounded-xl shadow-lg p-6 mb-4 border-2 border-blue-200">
+                            <h2 class="text-xl font-bold mb-4 text-blue-800">Attendance Check-In</h2>
                             
                             <div id="checkinStatus">
                                 ${!hasCheckedIn ? `
@@ -549,7 +549,7 @@
                                             </div>
                                         `}
 
-                                        <button onclick="handleCheckIn()" class="w-full bg-green-500 text-white py-4 rounded-lg font-semibold hover:bg-green-600 flex items-center justify-center gap-2">
+                                        <button onclick="handleCheckIn()" class="w-full bg-yellow-500 text-blue-900 py-4 rounded-lg font-semibold hover:bg-yellow-600 flex items-center justify-center gap-2 shadow-lg">
                                             ${icons.checkCircle()}
                                             Check In Now
                                         </button>
@@ -557,12 +557,12 @@
                                         <div id="checkinError"></div>
                                     </div>
                                 ` : `
-                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                        <p class="text-green-800 font-semibold flex items-center gap-2">
+                                    <div class="bg-blue-50 border-2 border-blue-700 rounded-lg p-4">
+                                        <p class="text-blue-800 font-semibold flex items-center gap-2">
                                             ${icons.checkCircle()}
                                             You're checked in!
                                         </p>
-                                        <p class="text-sm text-green-700 mt-1">Attendance recorded successfully</p>
+                                        <p class="text-sm text-blue-700 mt-1">Attendance recorded successfully</p>
                                     </div>
                                 `}
                             </div>
@@ -570,17 +570,17 @@
 
                         <!-- Voting Card -->
                         ${state.eventData.isPollActive ? `
-                            <div class="bg-white rounded-xl shadow-lg p-6">
-                                <h2 class="text-xl font-bold mb-4 text-gray-800">Active Poll</h2>
+                            <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+                                <h2 class="text-xl font-bold mb-4 text-blue-800">Active Poll</h2>
                                 
-                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-                                    <p class="font-semibold text-purple-900">${state.eventData.pollQuestion}</p>
+                                <div class="bg-blue-50 border-2 border-blue-700 rounded-lg p-4 mb-4">
+                                    <p class="font-semibold text-blue-900">${state.eventData.pollQuestion}</p>
                                 </div>
 
                                 ${hasCheckedIn ? `
                                     <div id="voteOptions" class="space-y-2">
                                         ${state.eventData.pollOptions.map(option => `
-                                            <button onclick="handleVote('${option}')" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-900 py-3 rounded-lg font-medium transition">
+                                            <button onclick="handleVote('${option}')" class="w-full bg-yellow-100 hover:bg-yellow-200 text-blue-900 py-3 rounded-lg font-medium transition border-2 border-yellow-500 shadow-md">
                                                 ${option}
                                             </button>
                                         `).join('')}
@@ -859,12 +859,12 @@
                     const statusDiv = document.getElementById('voteStatus');
                     if (statusDiv) {
                         statusDiv.innerHTML = `
-                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                <p class="text-purple-800 font-semibold flex items-center gap-2">
+                            <div class="bg-blue-50 border-2 border-blue-700 rounded-lg p-4">
+                                <p class="text-blue-800 font-semibold flex items-center gap-2">
                                     ${icons.vote()}
                                     Your vote has been recorded!
                                 </p>
-                                <p class="text-sm text-purple-700 mt-1">You voted for: <span class="font-semibold">${option}</span></p>
+                                <p class="text-sm text-blue-700 mt-1">You voted for: <span class="font-semibold text-yellow-600">${option}</span></p>
                             </div>
                         `;
                     }
