@@ -801,7 +801,8 @@
                     phone: state.memberPhone,
                     fingerprint: fingerprint,
                     location: location,
-                    distance: distance
+                    distance: distance,
+                    checkInTime: new Date().toLocaleTimeString()
                 });
 
                 if (result.success) {
