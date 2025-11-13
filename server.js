@@ -353,10 +353,13 @@ app.post('/api/vote', (req, res) => {
 
 // Download attendance report
 app.get('/api/download-attendance', (req, res) => {
-  let csvContent = 'Name,Check-in Time,Distance (m)\n';
+  let csvContent = 'Name,Phone Number,Check-in Time,Distance (m)\n';
   
   eventData.attendees.forEach(attendee => {
-    csvContent += `${attendee.name},${attendee.checkInTime},${attendee.distance}\n`;
+    // Format phone number back to readable format
+    const phone = attendee.phone;
+    const formattedPhone = phone ? `(${phone.substr(0,3)}) ${phone.substr(3,3)}-${phone.substr(6,4)}` : '';
+    csvContent += `${attendee.name},${formattedPhone},${attendee.checkInTime},${attendee.distance}\n`;
   });
   
   res.setHeader('Content-Type', 'text/csv');
