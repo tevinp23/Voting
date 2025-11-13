@@ -208,7 +208,7 @@ app.get('/api/votes', (req, res) => {
 
 // Member: Check in
 app.post('/api/checkin', (req, res) => {
-  const { phone, fingerprint, location, distance } = req.body;
+  const { phone, fingerprint, location, distance, checkInTime } = req.body;
   
   if (!eventData.isEventActive) {
     return res.status(400).json({ success: false, message: 'No active event' });
@@ -273,7 +273,7 @@ app.post('/api/checkin', (req, res) => {
   const attendee = {
     name: memberInfo.name,
     phone: normalizedPhone,
-    checkInTime: new Date().toLocaleTimeString(),
+    checkInTime: checkInTime || new Date().toLocaleTimeString(), // Use client time if provided
     distance: Math.round(distance),
     fingerprint: fingerprint
   };
