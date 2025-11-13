@@ -140,6 +140,12 @@
             state.approvedMembers = data.members;
         }
 
+        // Format phone number for display
+        function formatPhone(phone) {
+            if (!phone || phone.length !== 10) return phone;
+            return `(${phone.substr(0,3)}) ${phone.substr(3,3)}-${phone.substr(6,4)}`;
+        }
+
         // Render Functions
         function render() {
             const app = document.getElementById('app');
@@ -249,8 +255,8 @@
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Upload CSV</label>
-                                        <input type="file" id="rosterFile" accept=".csv,.xlsx,.xls" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                                        <p class="text-xs text-gray-500 mt-1">Upload Excel (.xlsx) or CSV file with phone numbers</p>
+                                        <input type="file" id="rosterFile" accept=".csv" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <p class="text-xs text-gray-500 mt-1">CSV file with First, Last, and Cell Phone columns</p>
                                     </div>
                                     
                                     <button onclick="handleUploadRoster()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2">
@@ -265,7 +271,7 @@
                                                 ${state.approvedMembers.slice(0, 10).map(m => `
                                                     <div class="flex justify-between py-1">
                                                         <span>• ${m.name}</span>
-                                                        <span class="text-gray-600">${m.phone ? m.phone.substr(0,3) + '-' + m.phone.substr(3,3) + '-' + m.phone.substr(6,4) : ''}</span>
+                                                        <span class="text-gray-600">${formatPhone(m.phone)}</span>
                                                     </div>
                                                 `).join('')}
                                                 ${state.approvedMembers.length > 10 ? `<div class="text-center mt-1">... and ${state.approvedMembers.length - 10} more</div>` : ''}
@@ -371,7 +377,7 @@
                                             <div>
                                                 <p class="font-semibold text-gray-800">${attendee.name}</p>
                                                 <p class="text-xs text-gray-600">${attendee.checkInTime}</p>
-                                                ${attendee.phone ? `<p class="text-xs text-gray-500">${attendee.phone.substr(0,3)}-${attendee.phone.substr(3,3)}-${attendee.phone.substr(6,4)}</p>` : ''}
+                                                ${attendee.phone ? `<p class="text-xs text-gray-500">${formatPhone(attendee.phone)}</p>` : ''}
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-xs text-gray-600">${attendee.distance}m away</p>
@@ -654,6 +660,11 @@
                 return;
             }
 
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Please select a CSV file');
+                return;
+            }
+
             try {
                 const result = await uploadRoster(file);
                 if (result.success) {
@@ -821,13 +832,19 @@
 
         async function handleVote(option) {
             try {
-                const location = await getUserLocation();
-                const distance = calculateDistance(
-                    location.lat,
-                    location.lng,
-                    state.eventData.eventLocation.lat,
-                    state.eventData.eventLocation.lng
-                );
+                let location = { lat: 0, lng: 0 };
+                let distance = 0;
+
+                // Only get location if required
+                if (state.eventData.requireLocation !== false) {
+                    location = await getUserLocation();
+                    distance = calculateDistance(
+                        location.lat,
+                        location.lng,
+                        state.eventData.eventLocation.lat,
+                        state.eventData.eventLocation.lng
+                    );
+                }
 
                 const fingerprint = getDeviceFingerprint();
 
