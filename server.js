@@ -3,7 +3,6 @@ const multer = require('multer');
 const csv = require('csv-parser');
 const cors = require('cors');
 const path = require('path');
-const XLSX = require('xlsx');
 
 const app = express();
 
@@ -26,7 +25,8 @@ let eventData = {
   pollOptions: [],
   isPollActive: false,
   votes: {},
-  approvedMembers: []
+  approvedMembers: [],
+  requireLocation: true
 };
 
 // Configure multer for memory storage (since Vercel doesn't have persistent file system)
@@ -34,48 +34,6 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const ADMIN_PASSWORD = 'FratAdmin2024';
-
-// Parse Excel file from buffer
-function parseExcelFromBuffer(buffer) {
-  try {
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet);
-    
-    const members = [];
-    
-    data.forEach(row => {
-      // Get phone number - normalize it to 10 digits only
-      let phone = row['Cell Phone'] || row['Phone'] || row['cell phone'] || row['phone'] || '';
-      
-      // Remove all non-digit characters
-      phone = phone.toString().replace(/\D/g, '');
-      
-      // Get name
-      const firstName = row['First'] || row['first'] || row['First Name'] || '';
-      const lastName = row['Last'] || row['last'] || row['Last Name'] || '';
-      const fullName = `${firstName} ${lastName}`.trim();
-      
-      // Get roll number
-      const rollNumber = row['Roll Number'] || row['roll number'] || '';
-      
-      if (phone && phone.length === 10) {
-        members.push({
-          name: fullName,
-          phone: phone,
-          rollNumber: rollNumber,
-          firstName: firstName,
-          lastName: lastName
-        });
-      }
-    });
-    
-    return members;
-  } catch (error) {
-    throw new Error('Failed to parse Excel file: ' + error.message);
-  }
-}
 
 // Parse CSV from buffer
 function parseCSVFromBuffer(buffer) {
@@ -88,21 +46,33 @@ function parseCSVFromBuffer(buffer) {
     stream
       .pipe(csv())
       .on('data', (row) => {
-        const name = row.name || row.Name || row.NAME || 
-                     row.fullname || row['Full Name'] || row['full name'];
-        const email = row.email || row.Email || row.EMAIL || '';
-        const memberId = row.id || row.ID || row.memberid || row['Member ID'] || '';
+        // Get first and last name
+        const firstName = row['First'] || row['first'] || row['First Name'] || row['first name'] || '';
+        const lastName = row['Last'] || row['last'] || row['Last Name'] || row['last name'] || '';
+        const fullName = `${firstName} ${lastName}`.trim();
         
-        // Get phone number and normalize
-        let phone = row.phone || row.Phone || row.PHONE || row['Cell Phone'] || '';
-        phone = phone.toString().replace(/\D/g, ''); // Remove non-digits
+        // Get phone number - handle multiple possible column names
+        let phone = row['Cell Phone'] || row['cell phone'] || row['Phone'] || row['phone'] || 
+                    row['PHONE'] || row['Cell'] || row['cell'] || '';
         
-        if (name || (phone && phone.length === 10)) {
+        // Remove all non-digit characters from phone number
+        phone = phone.toString().replace(/\D/g, '');
+        
+        // Get roll number
+        const rollNumber = row['Roll Number'] || row['roll number'] || row['Roll'] || '';
+        
+        // Get email
+        const email = row['Email'] || row['email'] || row['EMAIL'] || '';
+        
+        // Only add if we have both a name and a valid 10-digit phone number
+        if (fullName && phone && phone.length === 10) {
           members.push({
-            name: name ? name.trim() : '',
-            email: email.trim(),
-            memberId: memberId.trim(),
-            phone: phone
+            name: fullName,
+            phone: phone,
+            rollNumber: rollNumber,
+            email: email,
+            firstName: firstName,
+            lastName: lastName
           });
         }
       })
@@ -124,16 +94,20 @@ app.post('/api/upload-roster', upload.single('roster'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
     
-    let members;
     const fileName = req.file.originalname.toLowerCase();
     
-    // Determine file type and parse accordingly
-    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-      members = parseExcelFromBuffer(req.file.buffer);
-    } else if (fileName.endsWith('.csv')) {
-      members = await parseCSVFromBuffer(req.file.buffer);
-    } else {
-      return res.status(400).json({ success: false, message: 'Invalid file type. Please upload .xlsx, .xls, or .csv file' });
+    // Only accept CSV files
+    if (!fileName.endsWith('.csv')) {
+      return res.status(400).json({ success: false, message: 'Invalid file type. Please upload a .csv file' });
+    }
+    
+    const members = await parseCSVFromBuffer(req.file.buffer);
+    
+    if (members.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No valid members found in CSV. Make sure the file has "First", "Last", and "Cell Phone" columns with valid 10-digit phone numbers.' 
+      });
     }
     
     eventData.approvedMembers = members;
@@ -204,7 +178,7 @@ app.get('/api/event-status', (req, res) => {
     pollQuestion: eventData.pollQuestion,
     pollOptions: eventData.pollOptions,
     isPollActive: eventData.isPollActive,
-    requireLocation: eventData.requireLocation !== false
+    requireLocation: eventData.requireLocation
   });
 });
 
@@ -261,7 +235,7 @@ app.post('/api/checkin', (req, res) => {
     if (!memberInfo) {
       return res.status(403).json({ 
         success: false, 
-        message: 'Phone number not found on roster' 
+        message: 'Phone number not found on roster. Your number: ' + normalizedPhone
       });
     }
   } else {
@@ -288,14 +262,14 @@ app.post('/api/checkin', (req, res) => {
   }
   
   // Check distance (only if location verification is required)
-  if (eventData.requireLocation !== false && distance > eventData.radius) {
+  if (eventData.requireLocation && distance > eventData.radius) {
     return res.status(400).json({ 
       success: false, 
       message: `You are ${Math.round(distance)}m away. Must be within ${eventData.radius}m` 
     });
   }
   
-  // Add attendee
+  // Add attendee with name from roster
   const attendee = {
     name: memberInfo.name,
     phone: normalizedPhone,
@@ -339,8 +313,8 @@ app.post('/api/vote', (req, res) => {
     });
   }
   
-  // Verify location again
-  if (distance > eventData.radius) {
+  // Verify location again (only if location verification is required)
+  if (eventData.requireLocation && distance > eventData.radius) {
     return res.status(400).json({ 
       success: false, 
       message: `You must be within ${eventData.radius}m to vote` 
